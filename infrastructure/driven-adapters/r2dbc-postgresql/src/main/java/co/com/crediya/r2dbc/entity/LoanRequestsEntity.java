@@ -1,0 +1,21 @@
+package co.com.crediya.r2dbc.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder(toBuilder = true)
+public class LoanRequestsEntity {
+    private Long id;
+    private Double amount;
+    private int  term;
+    private String email;
+    private Long loanTypeId;
+    private Long loanStateId;
+}
