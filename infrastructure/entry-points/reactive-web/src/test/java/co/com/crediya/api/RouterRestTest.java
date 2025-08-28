@@ -1,12 +1,22 @@
 package co.com.crediya.api;
 
-import org.assertj.core.api.Assertions;
+import co.com.crediya.model.loantype.LoanType;
+import co.com.crediya.model.requests.LoanRequests;
+import co.com.crediya.model.states.LoanState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import co.com.crediya.usecase.requestloan.gateways.RegistryRequestLoan;
+import jakarta.validation.Validator;
+import reactor.core.publisher.Mono;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {RouterRest.class, Handler.class})
 @WebFluxTest
@@ -15,46 +25,44 @@ class RouterRestTest {
     @Autowired
     private WebTestClient webTestClient;
 
-    @Test
-    void testListenGETUseCase() {
-        webTestClient.get()
-                .uri("/api/usecase/path")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(userResponse -> {
-                            Assertions.assertThat(userResponse).isEmpty();
-                        }
-                );
-    }
+    @MockitoBean
+    private Validator validator;
 
-    @Test
-    void testListenGETOtherUseCase() {
-        webTestClient.get()
-                .uri("/api/otherusercase/path")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(userResponse -> {
-                            Assertions.assertThat(userResponse).isEmpty();
-                        }
-                );
+    @MockitoBean
+    private RegistryRequestLoan registryRequestLoan;
+
+    @BeforeEach
+    void setUp() {
+        when(registryRequestLoan.execute(any(LoanRequests.class)))
+                .thenReturn(Mono.just(LoanRequests.builder()
+                        .id(1L)
+                        .amount(1000.0)
+                        .term(12)
+                        .email("test@example.com")
+                        .loanType(LoanType.builder().id(1L).name("HOME").build())
+                        .loanState(LoanState.builder().id(1L).name("PENDING").build())
+                        .build()));
     }
 
     @Test
     void testListenPOSTUseCase() {
         webTestClient.post()
-                .uri("/api/usecase/otherpath")
+                .uri("/api/v1/solicitud")
+                .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
-                .bodyValue("")
+                .bodyValue("""
+                    {
+                        "amount": 1000.0,
+                        "term": 12,
+                        "clientId": "12345",
+                        "clientName": "Test User",
+                        "clientEmail": "test@example.com",
+                        "clientPhone": "1234567890",
+                        "loanType": "HOME",
+                        "loanState": "PENDING"
+                    }
+                    """)
                 .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(userResponse -> {
-                            Assertions.assertThat(userResponse).isEmpty();
-                        }
-                );
+                .expectStatus().isOk();
     }
 }

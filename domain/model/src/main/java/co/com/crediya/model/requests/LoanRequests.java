@@ -17,7 +17,7 @@ import lombok.With;
 public class LoanRequests {
     private Long id;
     private Double amount;
-    private int  term;
+    private int term;
     private String email;
     private LoanType loanType;
     private LoanState loanState;

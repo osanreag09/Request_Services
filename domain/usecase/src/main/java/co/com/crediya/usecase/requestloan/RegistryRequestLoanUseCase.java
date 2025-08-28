@@ -1,6 +1,5 @@
 package co.com.crediya.usecase.requestloan;
 
-import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
 import co.com.crediya.model.requests.LoanRequests;
 import co.com.crediya.model.requests.gateways.RequestsRepository;
@@ -44,6 +43,49 @@ public class RegistryRequestLoanUseCase implements RegistryRequestLoan {
         return typeRepository.existsByName(loanTypeName);
     }
 
+    /*
+    public LoanTypeDetails calculateLoanDetails(String loanTypeName, int term, double amount) {
+        LoanTypeDetails details = new LoanTypeDetails();
+        details.setName(loanTypeName);
+
+        switch (loanTypeName.toUpperCase()) {
+            case "HOME":
+                details.setMinimumAmount(50000.0);
+                details.setMaximumAmount(500000.0);
+                details.setInterestRate(term > 120 ? 0.07 : 0.05); // Mayor plazo, mayor interés
+                details.setAutomaticValidation(amount <= 300000);
+                break;
+
+            case "PERSONAL":
+                details.setMinimumAmount(1000.0);
+                details.setMaximumAmount(50000.0);
+                details.setInterestRate(term > 36 ? 0.12 : 0.10);
+                details.setAutomaticValidation(amount <= 20000);
+                break;
+
+            case "AUTO":
+                details.setMinimumAmount(5000.0);
+                details.setMaximumAmount(100000.0);
+                details.setInterestRate(term > 60 ? 0.09 : 0.07);
+                details.setAutomaticValidation(amount <= 60000);
+                break;
+
+            case "EDUCATION":
+                details.setMinimumAmount(1000.0);
+                details.setMaximumAmount(20000.0);
+                details.setInterestRate(0.05); // Tasa fija
+                details.setAutomaticValidation(true); // Siempre validación automática
+                break;
+
+            default:
+                throw new IllegalArgumentException("Tipo de préstamo no soportado: " + loanTypeName);
+        }
+
+        return details;
+    }
+     */
+
+    /* TODO: Delte this method
     private Mono<LoanRequests> getLoanType(Long requestLoanTypeId) {
         return requestsRepository.findById(requestLoanTypeId)
                 .flatMap(loanRequests -> {
@@ -59,5 +101,6 @@ public class RegistryRequestLoanUseCase implements RegistryRequestLoan {
 
                 });
     }
+     */
 
 }

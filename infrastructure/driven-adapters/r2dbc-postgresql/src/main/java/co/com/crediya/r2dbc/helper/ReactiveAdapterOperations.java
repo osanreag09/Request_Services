@@ -1,5 +1,6 @@
 package co.com.crediya.r2dbc.helper;
 
+import lombok.extern.slf4j.Slf4j;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.data.domain.Example;
 import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;
@@ -12,6 +13,7 @@ import reactor.core.publisher.Mono;
 import java.lang.reflect.ParameterizedType;
 import java.util.function.Function;
 
+@Slf4j
 public abstract class ReactiveAdapterOperations<E, D, I, R extends ReactiveCrudRepository<D, I> & ReactiveQueryByExampleExecutor<D>> {
     protected R repository;
     protected ObjectMapper mapper;
@@ -42,6 +44,7 @@ public abstract class ReactiveAdapterOperations<E, D, I, R extends ReactiveCrudR
     }
 
     public Mono<E> save(E entity) {
+        log.info("Saving entity: {}", entity.toString());
         return saveData(toData(entity))
                 .map(this::toEntity)
                 .as(transactionalOperator::transactional);

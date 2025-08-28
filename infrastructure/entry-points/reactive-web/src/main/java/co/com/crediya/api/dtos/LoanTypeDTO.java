@@ -1,18 +1,17 @@
-package co.com.crediya.r2dbc.entity;
+package co.com.crediya.api.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.relational.core.mapping.Table;
+import lombok.Setter;
 
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table("loan_types")
-public class LoanTypeEntity {
-    private Long id;
+public class LoanTypeDTO {
     private String name;
     private double minimumAmount;
     private double maximumAmount;

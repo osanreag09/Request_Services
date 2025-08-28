@@ -1,78 +1,132 @@
 package co.com.crediya.r2dbc;
 
+import co.com.crediya.model.requests.LoanRequests;
+import co.com.crediya.model.states.LoanState;
+import co.com.crediya.r2dbc.entity.LoanRequestsEntity;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.reactivecommons.utils.ObjectMapper;
-import org.springframework.data.domain.Example;
-import reactor.core.publisher.Flux;
+import org.springframework.transaction.ReactiveTransaction;
+import org.springframework.transaction.ReactiveTransactionManager;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class LoanRequestReactiveRepositoryAdapterTest {
-    // TODO: change four you own tests
+
+    @Mock
+    private LoanRequestReactiveRepository repository;
+
+    @Mock
+    private ObjectMapper mapper;
+
+    @Mock
+    private ReactiveTransactionManager transactionManager;
+
+    @Mock
+    private ReactiveTransaction transaction;
 
     @InjectMocks
-    LoanRequestReactiveRepositoryAdapter repositoryAdapter;
+    private LoanRequestReactiveRepositoryAdapter repositoryAdapter;
 
-    @Mock
-    LoanRequestReactiveRepository repository;
+    private LoanRequests testLoanRequest;
+    private LoanRequestsEntity testLoanRequestEntity;
 
-    @Mock
-    ObjectMapper mapper;
+    @BeforeEach
+    void setUp() {
+        // Setup test data
+        testLoanRequest = LoanRequests.builder()
+                .id(1L)
+                .amount(1000.0)
+                .term(12)
+                .email("test@example.com")
+                .loanState(LoanState.builder().id(1L).name("PENDING").build())
+                .build();
+
+        testLoanRequestEntity = LoanRequestsEntity.builder()
+                .id(1L)
+                .amount(1000.0)
+                .term(12)
+                .email("test@example.com")
+                .loanStateId(1L)
+                .loanTypeId(1L)
+                .build();
+
+        // Setup lenient mocks for transaction manager
+        lenient().when(transactionManager.getReactiveTransaction(any()))
+                .thenReturn(Mono.just(transaction));
+        lenient().when(transactionManager.commit(any()))
+                .thenReturn(Mono.empty());
+        lenient().when(transactionManager.rollback(any()))
+                .thenReturn(Mono.empty());
+    }
 
     @Test
-    void mustFindValueById() {
+    void save_ShouldReturnSavedLoanRequest() {
+        // Arrange
+        when(mapper.map(any(LoanRequests.class), eq(LoanRequestsEntity.class)))
+                .thenReturn(testLoanRequestEntity);
+        when(repository.save(any(LoanRequestsEntity.class)))
+                .thenReturn(Mono.just(testLoanRequestEntity));
+        when(mapper.map(any(LoanRequestsEntity.class), eq(LoanRequests.class)))
+                .thenReturn(testLoanRequest);
 
-        when(repository.findById("1")).thenReturn(Mono.just("test"));
-        when(mapper.map("test", Object.class)).thenReturn("test");
-
-        Mono<Object> result = repositoryAdapter.findById("1");
-
-        StepVerifier.create(result)
-                .expectNextMatches(value -> value.equals("test"))
+        // Act & Assert
+        StepVerifier.create(repositoryAdapter.save(testLoanRequest))
+                .expectNextMatches(savedRequest ->
+                        savedRequest.getId().equals(1L) &&
+                                savedRequest.getEmail().equals("test@example.com")
+                )
                 .verifyComplete();
     }
 
     @Test
-    void mustFindAllValues() {
-        when(repository.findAll()).thenReturn(Flux.just("test"));
-        when(mapper.map("test", Object.class)).thenReturn("test");
+    void findById_ShouldReturnLoanRequest_WhenFound() {
+        // Arrange
+        when(repository.findById(1L))
+                .thenReturn(Mono.just(testLoanRequestEntity));
+        when(mapper.map(any(LoanRequestsEntity.class), eq(LoanRequests.class)))
+                .thenReturn(testLoanRequest);
 
-        Flux<Object> result = repositoryAdapter.findAll();
-
-        StepVerifier.create(result)
-                .expectNextMatches(value -> value.equals("test"))
+        // Act & Assert
+        StepVerifier.create(repositoryAdapter.findById(1L))
+                .expectNextMatches(request ->
+                        request.getId().equals(1L) &&
+                                request.getEmail().equals("test@example.com")
+                )
                 .verifyComplete();
     }
 
     @Test
-    void mustFindByExample() {
-        when(repository.findAll(any(Example.class))).thenReturn(Flux.just("test"));
-        when(mapper.map("test", Object.class)).thenReturn("test");
+    void findById_ShouldReturnEmpty_WhenNotFound() {
+        // Arrange
+        when(repository.findById(999L))
+                .thenReturn(Mono.empty());
 
-        Flux<Object> result = repositoryAdapter.findByExample("test");
-
-        StepVerifier.create(result)
-                .expectNextMatches(value -> value.equals("test"))
+        // Act & Assert
+        StepVerifier.create(repositoryAdapter.findById(999L))
                 .verifyComplete();
     }
 
     @Test
-    void mustSaveValue() {
-        when(repository.save("test")).thenReturn(Mono.just("test"));
-        when(mapper.map("test", Object.class)).thenReturn("test");
+    void save_ShouldHandleError() {
+        // Arrange
+        when(mapper.map(any(LoanRequests.class), eq(LoanRequestsEntity.class)))
+                .thenReturn(testLoanRequestEntity);
+        when(repository.save(any(LoanRequestsEntity.class)))
+                .thenReturn(Mono.error(new RuntimeException("Database error")));
 
-        Mono<Object> result = repositoryAdapter.save("test");
-
-        StepVerifier.create(result)
-                .expectNextMatches(value -> value.equals("test"))
-                .verifyComplete();
+        // Act & Assert
+        StepVerifier.create(repositoryAdapter.save(testLoanRequest))
+                .expectError(RuntimeException.class)
+                .verify();
     }
 }
