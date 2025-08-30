@@ -1,5 +1,6 @@
 package co.com.crediya.r2dbc;
 
+import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.requests.LoanRequests;
 import co.com.crediya.model.states.LoanState;
 import co.com.crediya.r2dbc.entity.LoanRequestsEntity;
@@ -16,14 +17,14 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class LoanRequestReactiveRepositoryAdapterTest {
 
     @Mock
-    private LoanRequestReactiveRepository repository;
+    private LoanRequestReactiveRepository loanRequestReactiveRepository;
 
     @Mock
     private ObjectMapper mapper;
@@ -49,6 +50,7 @@ class LoanRequestReactiveRepositoryAdapterTest {
                 .term(12)
                 .email("test@example.com")
                 .loanState(LoanState.builder().id(1L).name("PENDING").build())
+                .loanType(LoanType.builder().id(1L).name("PERSONAL").build())
                 .build();
 
         testLoanRequestEntity = LoanRequestsEntity.builder()
@@ -72,12 +74,10 @@ class LoanRequestReactiveRepositoryAdapterTest {
     @Test
     void save_ShouldReturnSavedLoanRequest() {
         // Arrange
-        when(mapper.map(any(LoanRequests.class), eq(LoanRequestsEntity.class)))
-                .thenReturn(testLoanRequestEntity);
-        when(repository.save(any(LoanRequestsEntity.class)))
+        when(loanRequestReactiveRepository.save(any(LoanRequestsEntity.class)))
                 .thenReturn(Mono.just(testLoanRequestEntity));
-        when(mapper.map(any(LoanRequestsEntity.class), eq(LoanRequests.class)))
-                .thenReturn(testLoanRequest);
+        when(loanRequestReactiveRepository.findById(anyLong()))
+                .thenReturn(Mono.just(testLoanRequestEntity));
 
         // Act & Assert
         StepVerifier.create(repositoryAdapter.save(testLoanRequest))
@@ -91,10 +91,9 @@ class LoanRequestReactiveRepositoryAdapterTest {
     @Test
     void findById_ShouldReturnLoanRequest_WhenFound() {
         // Arrange
-        when(repository.findById(1L))
+        when(loanRequestReactiveRepository.findById(1L))
                 .thenReturn(Mono.just(testLoanRequestEntity));
-        when(mapper.map(any(LoanRequestsEntity.class), eq(LoanRequests.class)))
-                .thenReturn(testLoanRequest);
+
 
         // Act & Assert
         StepVerifier.create(repositoryAdapter.findById(1L))
@@ -108,7 +107,7 @@ class LoanRequestReactiveRepositoryAdapterTest {
     @Test
     void findById_ShouldReturnEmpty_WhenNotFound() {
         // Arrange
-        when(repository.findById(999L))
+        when(loanRequestReactiveRepository.findById(999L))
                 .thenReturn(Mono.empty());
 
         // Act & Assert
@@ -119,9 +118,7 @@ class LoanRequestReactiveRepositoryAdapterTest {
     @Test
     void save_ShouldHandleError() {
         // Arrange
-        when(mapper.map(any(LoanRequests.class), eq(LoanRequestsEntity.class)))
-                .thenReturn(testLoanRequestEntity);
-        when(repository.save(any(LoanRequestsEntity.class)))
+        when(loanRequestReactiveRepository.save(any(LoanRequestsEntity.class)))
                 .thenReturn(Mono.error(new RuntimeException("Database error")));
 
         // Act & Assert
