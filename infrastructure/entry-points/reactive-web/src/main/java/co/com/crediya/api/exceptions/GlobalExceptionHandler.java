@@ -2,12 +2,14 @@ package co.com.crediya.api.exceptions;
 
 import co.com.crediya.usecase.requestloan.exception.InvalidRequestDataException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -24,13 +26,17 @@ public class GlobalExceptionHandler {
     private final String MESSAGE = "message";
 
     @ExceptionHandler(Exception.class)
-    public Mono<ResponseEntity<Map<String, Object>>> handleAllExceptions(Exception ex, ServerWebExchange exchange) {
-        log.error("Unexpected error: {}", ex.getMessage(), ex);
+    public Mono<ResponseEntity<ErrorResponse>> handleAllUncaughtException(
+            Exception ex,
+            ServerWebExchange exchange) {
 
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put(CODE, "INTERNAL_SERVER_ERROR");
-        errorResponse.put(MESSAGE, "Unexpected error. Please try again later.");
-        errorResponse.put(TIMESTAMP, Instant.now().toString());
+        log.error("Unhandled error occurred", ex);
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("INTERNAL_SERVER_ERROR")
+                .message("An unexpected error occurred")
+                .timestamp(Instant.now())
+                .build();
 
         return Mono.just(ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -39,17 +45,23 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(WebExchangeBindException.class)
-    public Mono<ResponseEntity<Map<String, Object>>> handleValidationExceptions(WebExchangeBindException ex) {
-        log.warn("Validation error: {}", ex.getMessage());
+    public Mono<ResponseEntity<ErrorResponse>> handleValidationExceptions(
+            WebExchangeBindException ex,
+            ServerWebExchange exchange) {
 
-        String errorMessage = ex.getFieldErrors().stream()
-                .map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage()))
-                .collect(Collectors.joining(", "));
+        // Get the first error message
+        String errorMessage = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .orElse("Validation error");
 
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put(CODE, "ERROR_VALIDACION");
-        errorResponse.put(MESSAGE, errorMessage);
-        errorResponse.put(TIMESTAMP, Instant.now().toString());
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("DATA_USER_INVALID")
+                .message(errorMessage)
+                .timestamp(Instant.now())
+                .build();
 
         return Mono.just(ResponseEntity
                 .badRequest()
@@ -58,16 +70,34 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidRequestDataException.class)
-    public Mono<ResponseEntity<Map<String, Object>>> handleInvalidRequestData(InvalidRequestDataException ex) {
+    public Mono<ResponseEntity<ErrorResponse>>  handleInvalidRequestData(InvalidRequestDataException ex) {
         log.warn("Error in request data: {}", ex.getMessage());
 
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put(CODE, "ERROR_DATOS_REQUEST");
-        errorResponse.put(MESSAGE, ex.getMessage());
-        errorResponse.put(TIMESTAMP, Instant.now().toString());
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("DATA_USER_INVALID")
+                .message(ex.getMessage())
+                .timestamp(Instant.now())
+                .build();
 
         return Mono.just(ResponseEntity
                 .badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(errorResponse));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleResponseStatusException(
+            ResponseStatusException ex,
+            ServerWebExchange exchange) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("ERROR_DATOS_USUARIO")
+                .message(ex.getReason() != null ? ex.getReason() : "Validation error")
+                .timestamp(Instant.now())
+                .build();
+
+        return Mono.just(ResponseEntity
+                .status(ex.getStatusCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(errorResponse));
     }

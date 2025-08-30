@@ -2,6 +2,7 @@ package co.com.crediya.api;
 
 import co.com.crediya.api.dtos.LoanRequestsDTO;
 import co.com.crediya.api.mappers.LoanRequestMapper;
+import co.com.crediya.api.util.ValidationUtil;
 import co.com.crediya.usecase.requestloan.gateways.RegistryRequestLoan;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -25,28 +26,12 @@ public class Handler {
 
     public Mono<ServerResponse> registerRequest(ServerRequest request) {
         return request.bodyToMono(LoanRequestsDTO.class)
-                .flatMap(dto -> {
-                    log.info("Registering loan request: {}", dto);
-                    var violations = validator.validate(dto);
-                    if (!violations.isEmpty()) {
-                        String errorMsg = violations.stream()
-                                .map(ConstraintViolation::getMessage)
-                                .reduce((a, b) -> a + ", " + b)
-                                .orElse("Validation error");
-                        return ServerResponse.badRequest()
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of("error", errorMsg));
-                    }
-                    return Mono.just(dto)
-                            .map(LoanRequestMapper::toDomain)
-                            .flatMap(registryRequestLoan::execute)
-                            .map(LoanRequestMapper::toDTO)
-                            .flatMap(dtoResp -> ServerResponse.ok()
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .bodyValue(dtoResp));
-                })
-                .onErrorResume(e -> ServerResponse.badRequest()
+                .flatMap(dto -> ValidationUtil.validate(dto, validator))
+                .map(LoanRequestMapper::toDomain)
+                .flatMap(registryRequestLoan::execute)
+                .map(LoanRequestMapper::toDTO)
+                .flatMap(dtoResp -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("error", e.getMessage())));
+                        .bodyValue(dtoResp));
     }
 }

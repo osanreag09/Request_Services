@@ -16,14 +16,13 @@ public class LoanRequestMapper {
             .amount(loanRequests.getAmount())
             .term(loanRequests.getTerm())
             .email(loanRequests.getEmail())
-            .loanType(loanRequests.getLoanType().getName())
-            .loanState(loanRequests.getLoanState().getName())
+            .loanType(loanRequests.getLoanType().getId().toString())
+            .loanState(loanRequests.getLoanState().getId().toString())
             .build();
     }
 
     public static LoanRequests toDomain(LoanRequestsDTO loanRequestsDTO) {
         logObjects(loanRequestsDTO);
-
         LoanRequests loanRequests = LoanRequests.builder()
                 .id(loanRequestsDTO.getId())
                 .amount(loanRequestsDTO.getAmount())
@@ -39,7 +38,7 @@ public class LoanRequestMapper {
 
     private static void logObjects(Object object) {
         try {
-            log.info("Converting LoanRequestsDTO to LoanRequests: {}",
+            log.info("Converting DTO TO MODEL: {}",
                     objectMapper.writeValueAsString(object));
         } catch (Exception e){
             log.error("Error logging LoanRequestsDTO to LoanRequests: {}", object.toString());

@@ -9,6 +9,9 @@ dependencies {
     implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0'
+    implementation('org.springdoc:springdoc-openapi-starter-common') {
+        exclude group: 'org.springframework', module: 'spring-webmvc'
+    }
 
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     testImplementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'

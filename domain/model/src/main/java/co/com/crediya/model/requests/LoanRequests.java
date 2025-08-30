@@ -9,7 +9,6 @@ import lombok.Setter;
 import lombok.With;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @With
