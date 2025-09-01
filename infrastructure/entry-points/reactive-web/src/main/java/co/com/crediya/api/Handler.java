@@ -3,6 +3,7 @@ package co.com.crediya.api;
 import co.com.crediya.api.dtos.LoanRequestsDTO;
 import co.com.crediya.api.mappers.LoanRequestMapper;
 import co.com.crediya.api.util.ValidationUtil;
+import co.com.crediya.model.auth.gateways.AuthServiceClient;
 import co.com.crediya.usecase.requestloan.gateways.RegistryRequestLoan;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;

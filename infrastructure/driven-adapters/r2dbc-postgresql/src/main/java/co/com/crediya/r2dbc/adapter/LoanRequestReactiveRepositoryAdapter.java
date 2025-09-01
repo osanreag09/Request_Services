@@ -1,4 +1,4 @@
-package co.com.crediya.r2dbc;
+package co.com.crediya.r2dbc.adapter;
 
 import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.requests.LoanRequests;
@@ -7,6 +7,7 @@ import co.com.crediya.model.states.LoanState;
 import co.com.crediya.r2dbc.entity.LoanRequestsEntity;
 import co.com.crediya.r2dbc.helper.ReactiveAdapterOperations;
 import co.com.crediya.r2dbc.mapper.LoanRequestsDataMapper;
+import co.com.crediya.r2dbc.repository.LoanRequestReactiveRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.stereotype.Repository;

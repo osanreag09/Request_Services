@@ -1,5 +1,7 @@
 package co.com.crediya.usecase;
 
+import co.com.crediya.model.auth.UserInfo;
+import co.com.crediya.model.auth.gateways.AuthServiceClient;
 import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
 import co.com.crediya.model.requests.LoanRequests;
@@ -32,6 +34,9 @@ class RegistryRequestLoanUseCaseTest {
 
     @Mock
     private StatesRepository statesRepository;
+
+    @Mock
+    private AuthServiceClient authServiceClient;
 
     @InjectMocks
     private RegistryRequestLoanUseCase useCase;
@@ -69,7 +74,11 @@ class RegistryRequestLoanUseCaseTest {
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
         when(typeRepository.findByName(anyString())).thenReturn(Mono.just(testLoanType));
         when(requestsRepository.save(any(LoanRequests.class))).thenReturn(Mono.just(testLoanRequest));
-
+        when(authServiceClient.getUserInfo(anyString()))
+                .thenReturn(Mono.just(new UserInfo(
+                        1L,"test@example.com",
+                        "test user",
+                        "USER")));
         // Act & Assert
         StepVerifier.create(useCase.execute(testLoanRequest))
                 .expectNextMatches(savedRequest ->
@@ -86,6 +95,11 @@ class RegistryRequestLoanUseCaseTest {
         // Arrange
         when(typeRepository.existsByName(anyString())).thenReturn(Mono.just(false));
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
+        when(authServiceClient.getUserInfo(anyString()))
+                .thenReturn(Mono.just(new UserInfo(
+                        1L,"test@example.com",
+                        "test user",
+                        "USER")));
 
         // Act & Assert
         StepVerifier.create(useCase.execute(testLoanRequest))
@@ -101,6 +115,11 @@ class RegistryRequestLoanUseCaseTest {
         // Arrange
         when(typeRepository.existsByName(anyString())).thenReturn(Mono.just(true));
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.empty());
+        when(authServiceClient.getUserInfo(anyString()))
+                .thenReturn(Mono.just(new UserInfo(
+                        1L,"test@example.com",
+                        "test user",
+                        "USER")));
 
         // Act & Assert
         StepVerifier.create(useCase.execute(testLoanRequest))
@@ -116,6 +135,11 @@ class RegistryRequestLoanUseCaseTest {
         // Arrange
         testLoanRequest.getLoanType().setName("");
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
+        when(authServiceClient.getUserInfo(anyString()))
+                .thenReturn(Mono.just(new UserInfo(
+                        1L,"test@example.com",
+                        "test user",
+                        "USER")));
 
         // Act & Assert
         StepVerifier.create(useCase.execute(testLoanRequest))
@@ -131,12 +155,48 @@ class RegistryRequestLoanUseCaseTest {
         // Arrange
         testLoanRequest.getLoanType().setName(null);
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
+        when(authServiceClient.getUserInfo(anyString()))
+                .thenReturn(Mono.just(new UserInfo(
+                        1L,"test@example.com",
+                        "test user",
+                        "USER")));
 
         // Act & Assert
         StepVerifier.create(useCase.execute(testLoanRequest))
                 .expectErrorMatches(throwable ->
                         throwable instanceof IllegalArgumentException &&
                                 throwable.getMessage().equals("Loan type name cannot be empty")
+                )
+                .verify();
+    }
+
+    @Test
+    void validateUser_ShouldFail_WhenEmailDoesNotMatch() {
+        // Arrange
+        String requestEmail = "different@example.com";
+        String userEmail = "stored@example.com";
+
+        // Set up test data with a different email
+        testLoanRequest = testLoanRequest.withEmail(requestEmail);
+
+        // Mock the repository calls
+        when(typeRepository.existsByName(anyString())).thenReturn(Mono.just(true));
+        when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
+
+        // Mock the auth service to return a user with a different email
+        when(authServiceClient.getUserInfo(requestEmail))
+                .thenReturn(Mono.just(new UserInfo(
+                        1L,
+                        userEmail,  // Different from request email
+                        "test user",
+                        "USER"
+                )));
+
+        // Act & Assert
+        StepVerifier.create(useCase.execute(testLoanRequest))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof InvalidRequestDataException &&
+                                throwable.getMessage().contains("Email does not match user record")
                 )
                 .verify();
     }

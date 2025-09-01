@@ -1,5 +1,6 @@
 package co.com.crediya.config;
 
+import co.com.crediya.model.auth.gateways.AuthServiceClient;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
 import co.com.crediya.model.requests.gateways.RequestsRepository;
 import co.com.crediya.model.states.gateways.StatesRepository;
@@ -53,6 +54,11 @@ public class UseCasesConfigTest {
         @Bean
         public StatesRepository statesRepository() {
             return Mockito.mock(StatesRepository.class);
+        }
+
+        @Bean
+        public AuthServiceClient authServiceClient() {
+            return Mockito.mock(AuthServiceClient.class);
         }
     }
 

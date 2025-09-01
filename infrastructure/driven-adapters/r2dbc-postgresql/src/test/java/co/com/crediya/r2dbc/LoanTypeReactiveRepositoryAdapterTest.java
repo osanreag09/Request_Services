@@ -1,7 +1,9 @@
 package co.com.crediya.r2dbc;
 
 import co.com.crediya.model.loantype.LoanType;
+import co.com.crediya.r2dbc.adapter.LoanTypeReactiveRepositoryAdapter;
 import co.com.crediya.r2dbc.entity.LoanTypeEntity;
+import co.com.crediya.r2dbc.repository.LoanTypeReactiveRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

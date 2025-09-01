@@ -1,9 +1,10 @@
-package co.com.crediya.r2dbc;
+package co.com.crediya.r2dbc.adapter;
 
 import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
 import co.com.crediya.r2dbc.entity.LoanTypeEntity;
 import co.com.crediya.r2dbc.helper.ReactiveAdapterOperations;
+import co.com.crediya.r2dbc.repository.LoanTypeReactiveRepository;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.ReactiveTransactionManager;

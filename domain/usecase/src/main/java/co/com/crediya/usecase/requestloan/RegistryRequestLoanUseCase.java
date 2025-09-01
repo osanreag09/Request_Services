@@ -1,5 +1,6 @@
 package co.com.crediya.usecase.requestloan;
 
+import co.com.crediya.model.auth.gateways.AuthServiceClient;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
 import co.com.crediya.model.requests.LoanRequests;
 import co.com.crediya.model.requests.gateways.RequestsRepository;
@@ -13,19 +14,22 @@ public class RegistryRequestLoanUseCase implements RegistryRequestLoan {
     private final LoanTypeRepository typeRepository;
     private final RequestsRepository requestsRepository;
     private final StatesRepository statesRepository;
+    private final AuthServiceClient authServiceClient;
 
     public RegistryRequestLoanUseCase(
             LoanTypeRepository typeRepository,
             RequestsRepository requestsRepository,
-            StatesRepository statesRepository
+            StatesRepository statesRepository,
+            AuthServiceClient authServiceClient
     ) {
         this.typeRepository = typeRepository;
         this.requestsRepository = requestsRepository;
         this.statesRepository = statesRepository;
+        this.authServiceClient = authServiceClient;
     }
 
     public Mono<LoanRequests> execute(LoanRequests loanRequests) {
-        return validateLoanType(loanRequests.getLoanType().getName())
+        return makeValidation(loanRequests.getLoanType().getName(), loanRequests.getEmail())
                 .then(statesRepository.findByName("PENDING")
                         .switchIfEmpty(Mono.error(new InvalidRequestDataException("PENDING state not found")))
                         .flatMap(state ->
@@ -53,6 +57,22 @@ public class RegistryRequestLoanUseCase implements RegistryRequestLoan {
                         sink.complete();
                     }
                 });
+    }
+
+    private Mono<Void> validateUser(String email) {
+        return authServiceClient.getUserInfo(email)
+                .switchIfEmpty(Mono.error(new InvalidRequestDataException("User not found")))
+                .flatMap(userInfo -> {
+                    if (!userInfo.email().equals(email)) {
+                        return Mono.error(new InvalidRequestDataException("Email does not match user record"));
+                    }
+                    return Mono.empty();
+                });
+    }
+
+    private Mono<Void> makeValidation(String loanTypeName, String email) {
+        return validateLoanType(loanTypeName)
+                .then(validateUser(email));
     }
 
     /* //TODO: Delte this method
