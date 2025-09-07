@@ -3,6 +3,7 @@ package co.com.crediya.r2dbc.adapter;
 import co.com.crediya.model.auth.UserInfo;
 import co.com.crediya.model.auth.gateways.AuthServiceClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -10,6 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @RequiredArgsConstructor
 public class AuthServiceClientAdapter implements AuthServiceClient {
 
@@ -39,8 +41,10 @@ public class AuthServiceClientAdapter implements AuthServiceClient {
     private <T> Mono<T> handleError(HttpStatusCode status, String message) {
         if (status.value() == HttpStatus.UNAUTHORIZED.value() ||
                 status.value() == HttpStatus.FORBIDDEN.value()) {
-            return Mono.error(new SecurityException("Acceso no autorizado: " + message));
+            log.error("Access not authorized: " + message);
+            return Mono.error(new SecurityException(""));
         }
-        return Mono.error(new RuntimeException("Error en el servicio de autenticación (" + status + "): " + message));
+        log.error("Error in authentication service (" + status + "): " + message);
+        return Mono.error(new RuntimeException(""));
     }
 }

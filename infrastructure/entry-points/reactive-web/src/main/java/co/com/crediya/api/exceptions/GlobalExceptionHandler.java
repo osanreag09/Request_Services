@@ -12,11 +12,7 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @ControllerAdvice
@@ -69,7 +65,7 @@ public class GlobalExceptionHandler {
                 .body(errorResponse));
     }
 
-    @ExceptionHandler(InvalidRequestDataException.class)
+    @ExceptionHandler({InvalidRequestDataException.class,SecurityException.class, RuntimeException.class})
     public Mono<ResponseEntity<ErrorResponse>>  handleInvalidRequestData(InvalidRequestDataException ex) {
         log.warn("Error in request data: {}", ex.getMessage());
 
