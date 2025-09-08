@@ -10,9 +10,13 @@ import co.com.crediya.r2dbc.mapper.LoanRequestsDataMapper;
 import co.com.crediya.r2dbc.repository.LoanRequestReactiveRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivecommons.utils.ObjectMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.ReactiveTransactionManager;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import java.util.List;
 
 @Slf4j
 @Repository
@@ -53,4 +57,12 @@ public class LoanRequestReactiveRepositoryAdapter extends ReactiveAdapterOperati
                                         .build())
                                 .build());
     }
+
+    @Override
+    public Flux<LoanRequests> findByLoanStatesId(List<Long> loanStateIds, int init, int size) {
+        Pageable pageable = PageRequest.of(init, size);
+        return repository.findByLoanStateIdIn(loanStateIds, pageable)
+                .transform(LoanRequestsDataMapper::toDomainFlux);
+    }
+
 }

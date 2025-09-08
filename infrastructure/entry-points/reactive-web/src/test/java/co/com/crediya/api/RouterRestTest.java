@@ -3,6 +3,7 @@ package co.com.crediya.api;
 import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.requests.LoanRequests;
 import co.com.crediya.model.states.LoanState;
+import co.com.crediya.usecase.requestloan.gateways.GetLoans;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +32,12 @@ class RouterRestTest {
     @MockitoBean
     private RegistryRequestLoan registryRequestLoan;
 
+    @MockitoBean
+    private GetLoans getLoans;
+
     @BeforeEach
     void setUp() {
-        when(registryRequestLoan.execute(any(LoanRequests.class)))
+        when(registryRequestLoan.execute(any(LoanRequests.class), any(String.class)))
                 .thenReturn(Mono.just(LoanRequests.builder()
                         .id(1L)
                         .amount(1000.0)

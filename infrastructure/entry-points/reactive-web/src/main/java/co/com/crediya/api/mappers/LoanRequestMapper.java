@@ -6,6 +6,7 @@ import co.com.crediya.model.requests.LoanRequests;
 import co.com.crediya.model.states.LoanState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 
 @Slf4j
 public class LoanRequestMapper {
@@ -34,6 +35,10 @@ public class LoanRequestMapper {
 
         logObjects(loanRequests);
         return loanRequests;
+    }
+
+    public static Flux<LoanRequestsDTO> toDTOList(Flux<LoanRequests> loanRequests) {
+        return loanRequests.map(LoanRequestMapper::toDTO);
     }
 
     private static void logObjects(Object object) {

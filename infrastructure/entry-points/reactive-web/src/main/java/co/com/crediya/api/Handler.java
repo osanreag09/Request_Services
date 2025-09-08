@@ -4,6 +4,7 @@ import co.com.crediya.api.dtos.LoanRequestsDTO;
 import co.com.crediya.api.mappers.LoanRequestMapper;
 import co.com.crediya.api.util.JwtUtil;
 import co.com.crediya.api.util.ValidationUtil;
+import co.com.crediya.usecase.requestloan.gateways.GetLoans;
 import co.com.crediya.usecase.requestloan.gateways.RegistryRequestLoan;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,9 @@ import reactor.core.publisher.Mono;
 public class Handler {
     private final Validator validator;
     private final RegistryRequestLoan registryRequestLoan;
+    private final GetLoans getLoans;
 
     public Mono<ServerResponse> registerRequest(ServerRequest request) {
-        log.info("Is in handler");
         return JwtUtil.getTokenFromHeader(request)
                 .flatMap(token ->
                         request.bodyToMono(LoanRequestsDTO.class)
@@ -34,5 +35,17 @@ public class Handler {
                                         .contentType(MediaType.APPLICATION_JSON)
                                         .bodyValue(dtoResp))
                 );
+    }
+
+    public Mono<ServerResponse> getAllRequests(ServerRequest request) {
+        int init = Integer.parseInt(request.queryParam("init").orElse("0"));
+        int size = Integer.parseInt(request.queryParam("size").orElse("10"));
+
+        return getLoans.execute(init, size)
+                .transform(LoanRequestMapper::toDTOList)
+                .collectList()
+                .flatMap(loans -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(loans));
     }
 }

@@ -14,17 +14,11 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 @Slf4j
 public class AuthorizationFilter implements WebFilter {
 
     private final JwtUtil jwtUtil;
-
-    private final Map<String, Set<String>> securedPaths = Map.of(
-            "/api/v1/solicitud", Set.of("ADMIN", "ASSESSOR","CLIENT")
-    );
 
     public AuthorizationFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
@@ -33,6 +27,7 @@ public class AuthorizationFilter implements WebFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
+        String method = exchange.getRequest().getMethod().name();
 
         if (isPublicEndpoint(path)) {
             return chain.filter(exchange);
@@ -56,14 +51,10 @@ public class AuthorizationFilter implements WebFilter {
                         return exchange.getResponse().setComplete();
                     }
 
-                    // Special handling for user detail endpoint
-                    //TODO: Aqui se debe valdidar que el email que se envia coincida con el email del token.
-
-
-                    // For all other endpoints, use the existing role-based access control
-                    else if (!hasAccess(path, role)) {
-                        log.warn("Access denied for user {} with role {} to path {}",
-                                username, role, path);
+                    // Check permissions based on path and method
+                    if (!hasAccess(path, method, role)) {
+                        log.warn("Access denied for user {} with role {} to {} {}",
+                                username, role, method, path);
                         exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                         return exchange.getResponse().setComplete();
                     }
@@ -84,6 +75,17 @@ public class AuthorizationFilter implements WebFilter {
                 });
     }
 
+    private boolean hasAccess(String path, String method, String userRole) {
+        if ("/api/v1/solicitud".equals(path)) {
+            if ("GET".equals(method)) {
+                return "ADMIN".equals(userRole) || "ASSESSOR".equals(userRole);
+            } else if ("POST".equals(method)) {
+                return "ADMIN".equals(userRole) || "ASSESSOR".equals(userRole) || "CLIENT".equals(userRole);
+            }
+        }
+        return true;
+    }
+
     private boolean isPublicEndpoint(String path) {
         return path.equals("/api/v1/login") ||
                 path.equals("/api/v1/health") ||
@@ -97,25 +99,6 @@ public class AuthorizationFilter implements WebFilter {
                 path.endsWith(".png") ||
                 path.endsWith(".json") ||
                 path.equals("/favicon.ico");
-    }
-
-    private boolean hasAccess(String path, String userRole) {
-        String normalizedPath = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
-
-        for (Map.Entry<String, Set<String>> entry : securedPaths.entrySet()) {
-            String pattern = entry.getKey();
-
-            String regex = pattern
-                    .replace("/", "\\/")
-                    .replace("{", "(?<")
-                    .replace("}", ">[^\\/]+)") + "/?$";
-
-            if (normalizedPath.matches(regex)) {
-                return entry.getValue().stream()
-                        .anyMatch(role -> role.equals(userRole));
-            }
-        }
-        return true;
     }
 
     private String getTokenFromRequest(ServerHttpRequest request) {
