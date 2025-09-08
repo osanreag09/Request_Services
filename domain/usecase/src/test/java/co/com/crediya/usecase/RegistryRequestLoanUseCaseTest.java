@@ -44,6 +44,7 @@ class RegistryRequestLoanUseCaseTest {
     private LoanRequests testLoanRequest;
     private LoanState pendingState;
     private LoanType testLoanType;
+    private static final String token = "testToken";
 
     @BeforeEach
     void setUp() {
@@ -74,13 +75,13 @@ class RegistryRequestLoanUseCaseTest {
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
         when(typeRepository.findByName(anyString())).thenReturn(Mono.just(testLoanType));
         when(requestsRepository.save(any(LoanRequests.class))).thenReturn(Mono.just(testLoanRequest));
-        when(authServiceClient.getUserInfo(anyString()))
+        when(authServiceClient.getUserInfo(anyString(), anyString()))
                 .thenReturn(Mono.just(new UserInfo(
                         1L,"test@example.com",
                         "test user",
                         "USER")));
         // Act & Assert
-        StepVerifier.create(useCase.execute(testLoanRequest))
+        StepVerifier.create(useCase.execute(testLoanRequest, token))
                 .expectNextMatches(savedRequest ->
                         savedRequest.getId().equals(1L) &&
                                 savedRequest.getEmail().equals("test@example.com") &&
@@ -95,14 +96,14 @@ class RegistryRequestLoanUseCaseTest {
         // Arrange
         when(typeRepository.existsByName(anyString())).thenReturn(Mono.just(false));
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
-        when(authServiceClient.getUserInfo(anyString()))
+        when(authServiceClient.getUserInfo(anyString(), anyString()))
                 .thenReturn(Mono.just(new UserInfo(
                         1L,"test@example.com",
                         "test user",
                         "USER")));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(testLoanRequest))
+        StepVerifier.create(useCase.execute(testLoanRequest, token))
                 .expectErrorMatches(throwable ->
                         throwable instanceof InvalidRequestDataException &&
                                 throwable.getMessage().equals("Loan type not found")
@@ -115,14 +116,14 @@ class RegistryRequestLoanUseCaseTest {
         // Arrange
         when(typeRepository.existsByName(anyString())).thenReturn(Mono.just(true));
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.empty());
-        when(authServiceClient.getUserInfo(anyString()))
+        when(authServiceClient.getUserInfo(anyString(), anyString()))
                 .thenReturn(Mono.just(new UserInfo(
                         1L,"test@example.com",
                         "test user",
                         "USER")));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(testLoanRequest))
+        StepVerifier.create(useCase.execute(testLoanRequest, token))
                 .expectErrorMatches(throwable ->
                         throwable instanceof InvalidRequestDataException &&
                                 throwable.getMessage().equals("PENDING state not found")
@@ -135,14 +136,14 @@ class RegistryRequestLoanUseCaseTest {
         // Arrange
         testLoanRequest.getLoanType().setName("");
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
-        when(authServiceClient.getUserInfo(anyString()))
+        when(authServiceClient.getUserInfo(anyString(), anyString()))
                 .thenReturn(Mono.just(new UserInfo(
                         1L,"test@example.com",
                         "test user",
                         "USER")));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(testLoanRequest))
+        StepVerifier.create(useCase.execute(testLoanRequest, token))
                 .expectErrorMatches(throwable ->
                         throwable instanceof IllegalArgumentException &&
                                 throwable.getMessage().equals("Loan type name cannot be empty")
@@ -155,14 +156,14 @@ class RegistryRequestLoanUseCaseTest {
         // Arrange
         testLoanRequest.getLoanType().setName(null);
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
-        when(authServiceClient.getUserInfo(anyString()))
+        when(authServiceClient.getUserInfo(anyString(), anyString()))
                 .thenReturn(Mono.just(new UserInfo(
                         1L,"test@example.com",
                         "test user",
                         "USER")));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(testLoanRequest))
+        StepVerifier.create(useCase.execute(testLoanRequest, token))
                 .expectErrorMatches(throwable ->
                         throwable instanceof IllegalArgumentException &&
                                 throwable.getMessage().equals("Loan type name cannot be empty")
@@ -184,7 +185,7 @@ class RegistryRequestLoanUseCaseTest {
         when(statesRepository.findByName("PENDING")).thenReturn(Mono.just(pendingState));
 
         // Mock the auth service to return a user with a different email
-        when(authServiceClient.getUserInfo(requestEmail))
+        when(authServiceClient.getUserInfo(requestEmail, token))
                 .thenReturn(Mono.just(new UserInfo(
                         1L,
                         userEmail,  // Different from request email
@@ -193,7 +194,7 @@ class RegistryRequestLoanUseCaseTest {
                 )));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(testLoanRequest))
+        StepVerifier.create(useCase.execute(testLoanRequest, token))
                 .expectErrorMatches(throwable ->
                         throwable instanceof InvalidRequestDataException &&
                                 throwable.getMessage().contains("Email does not match user record")
