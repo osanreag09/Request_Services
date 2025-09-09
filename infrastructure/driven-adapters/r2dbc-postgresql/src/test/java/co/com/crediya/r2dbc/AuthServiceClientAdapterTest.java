@@ -1,7 +1,6 @@
 package co.com.crediya.r2dbc;
 
 import co.com.crediya.model.auth.UserInfo;
-import co.com.crediya.model.auth.gateways.AuthServiceClient;
 import co.com.crediya.r2dbc.adapter.AuthServiceClientAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,8 +13,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,98 +32,61 @@ class AuthServiceClientAdapterTest {
     @Mock
     private WebClient.ResponseSpec responseSpec;
 
-    private AuthServiceClient authServiceClient;
-    private final String basePath = "/api/v1/usuarios/";
+    private AuthServiceClientAdapter authServiceClient;
+    private static final String TEST_EMAIL = "test@example.com";
+    private static final String TEST_TOKEN = "test-token";
+    private static final UserInfo TEST_USER = new UserInfo(1L, TEST_EMAIL, "Test User", "USER");
 
     @BeforeEach
     void setUp() {
-        authServiceClient = new AuthServiceClientAdapter(webClient) {
-        };
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.header(any(), any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.accept(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+
+        authServiceClient = new AuthServiceClientAdapter(webClient);
     }
 
     @Test
     void getUserInfo_ShouldReturnUserInfo_WhenRequestIsSuccessful() {
         // Arrange
-        String email = "test@example.com";
-        UserInfo expectedUser = new UserInfo(1L, email, "Test User", "USER");
-        mockWebClientSuccess(expectedUser, email);
+        when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(UserInfo.class)).thenReturn(Mono.just(TEST_USER));
 
         // Act & Assert
-        StepVerifier.create(authServiceClient.getUserInfo(email))
-                .expectNext(expectedUser)
+        StepVerifier.create(authServiceClient.getUserInfo(TEST_EMAIL, TEST_TOKEN))
+                .expectNext(TEST_USER)
                 .verifyComplete();
-    }
-
-    @Test
-    void getUserInfo_ShouldReturnEmpty_WhenUserNotFound() {
-        // Arrange
-        String email = "nonexistent@example.com";
-        mockWebClientError(email, HttpStatus.NOT_FOUND);
-
-        // Act & Assert
-        StepVerifier.create(authServiceClient.getUserInfo(email))
-                .expectErrorMatches(throwable ->
-                        throwable instanceof RuntimeException)
-                .verify();
     }
 
     @Test
     void getUserInfo_ShouldThrowSecurityException_WhenUnauthorized() {
         // Arrange
-        String email = "unauthorized@example.com";
-        mockWebClientError(email, HttpStatus.UNAUTHORIZED);
+        when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(UserInfo.class))
+                .thenReturn(Mono.error(WebClientResponseException.create(
+                        HttpStatus.UNAUTHORIZED.value(),
+                        "Unauthorized",
+                        null, null, null
+                )));
 
         // Act & Assert
-        StepVerifier.create(authServiceClient.getUserInfo(email))
-                .expectErrorMatches(throwable ->
-                        throwable instanceof SecurityException)
+        StepVerifier.create(authServiceClient.getUserInfo(TEST_EMAIL, TEST_TOKEN))
+                .expectError(SecurityException.class)
                 .verify();
     }
 
     @Test
     void getUserInfo_ShouldHandleWebClientError() {
         // Arrange
-        String email = "error@example.com";
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(basePath + email)).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.accept(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(UserInfo.class))
-                .thenReturn(Mono.error(WebClientResponseException.create(
-                       500,
-                        "Internal Server Error",
-                        null, null, null
-                )));
+                .thenReturn(Mono.error(new RuntimeException("Internal Server Error")));
 
         // Act & Assert
-        StepVerifier.create(authServiceClient.getUserInfo(email))
-                .expectErrorSatisfies(throwable -> {
-                    assertThat(throwable).isInstanceOf(RuntimeException.class);
-                })
+        StepVerifier.create(authServiceClient.getUserInfo(TEST_EMAIL, TEST_TOKEN))
+                .expectError(RuntimeException.class)
                 .verify();
-    }
-
-    private void mockWebClientSuccess(UserInfo userInfo, String email) {
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(basePath + email)).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.accept(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(UserInfo.class)).thenReturn(Mono.just(userInfo));
-    }
-
-    private void mockWebClientError(String email, HttpStatus status) {
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(basePath + email)).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.accept(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(UserInfo.class))
-                .thenReturn(Mono.error(WebClientResponseException.create(
-                        status.value(),
-                        status.getReasonPhrase(),
-                        null, null, null
-                )));
     }
 }

@@ -21,4 +21,5 @@ dependencies {
 
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     testImplementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    testImplementation 'org.springframework.security:spring-security-test'
 }

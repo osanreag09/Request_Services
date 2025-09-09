@@ -13,13 +13,21 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.reactivecommons.utils.ObjectMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.ReactiveTransaction;
 import org.springframework.transaction.ReactiveTransactionManager;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
@@ -127,5 +135,39 @@ class LoanRequestReactiveRepositoryAdapterTest {
         StepVerifier.create(repositoryAdapter.save(testLoanRequest))
                 .expectError(RuntimeException.class)
                 .verify();
+    }
+
+    @Test
+    void findByLoanStatesId_ShouldReturnFilteredLoans() {
+        // Arrange
+        List<Long> stateIds = Arrays.asList(1L, 2L, 3L);
+        int page = 0;
+        int size = 10;
+
+        when(loanRequestReactiveRepository.findByLoanStateIdIn(eq(stateIds), any(Pageable.class)))
+                .thenReturn(Flux.just(testLoanRequestEntity));
+
+        // Act & Assert
+        StepVerifier.create(repositoryAdapter.findByLoanStatesId(stateIds, page, size))
+                .expectNextMatches(loan ->
+                        loan.getId().equals(1L) &&
+                                loan.getEmail().equals("test@example.com")
+                )
+                .verifyComplete();
+    }
+
+    @Test
+    void findByLoanStatesId_ShouldReturnEmpty_WhenNoMatches() {
+        // Arrange
+        List<Long> stateIds = Arrays.asList(4L, 5L, 6L);
+        int page = 0;
+        int size = 10;
+
+        when(loanRequestReactiveRepository.findByLoanStateIdIn(eq(stateIds), any(Pageable.class)))
+                .thenReturn(Flux.empty());
+
+        // Act & Assert
+        StepVerifier.create(repositoryAdapter.findByLoanStatesId(stateIds, page, size))
+                .verifyComplete();
     }
 }
