@@ -1,9 +1,11 @@
 package co.com.crediya.usecase;
 
 import co.com.crediya.model.loantype.LoanType;
+import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
 import co.com.crediya.model.requests.LoanRequests;
 import co.com.crediya.model.requests.gateways.RequestsRepository;
 import co.com.crediya.model.states.LoanState;
+import co.com.crediya.model.states.gateways.StatesRepository;
 import co.com.crediya.usecase.requestloan.GetLoansUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.List;
@@ -23,6 +26,12 @@ class GetLoansUseCaseTest {
 
     @Mock
     private RequestsRepository requestsRepository;
+
+    @Mock
+    private LoanTypeRepository loanTypeRepository;
+
+    @Mock
+    private StatesRepository loanStateRepository;
 
     @InjectMocks
     private GetLoansUseCase getLoansUseCase;
@@ -40,6 +49,10 @@ class GetLoansUseCaseTest {
         List<Long> expectedStateIds = List.of(1L, 3L, 6L);
         when(requestsRepository.findByLoanStatesId(expectedStateIds, 0, 10))
                 .thenReturn(Flux.just(testLoan));
+        when(loanTypeRepository.findById(testLoan.getLoanType().getId()))
+                .thenReturn(Mono.just(testLoan.getLoanType()));
+        when(loanStateRepository.findById(testLoan.getLoanState().getId()))
+                .thenReturn(Mono.just(testLoan.getLoanState()));
 
         // When
         Flux<LoanRequests> result = getLoansUseCase.execute(0, 10);
@@ -60,6 +73,10 @@ class GetLoansUseCaseTest {
         List<Long> expectedStateIds = List.of(1L, 3L, 6L);
         when(requestsRepository.findByLoanStatesId(expectedStateIds, 20, 10))
                 .thenReturn(Flux.just(testLoan));
+        when(loanTypeRepository.findById(testLoan.getLoanType().getId()))
+                .thenReturn(Mono.just(testLoan.getLoanType()));
+        when(loanStateRepository.findById(testLoan.getLoanState().getId()))
+                .thenReturn(Mono.just(testLoan.getLoanState()));
 
         // When
         Flux<LoanRequests> result = getLoansUseCase.execute(20, 10);

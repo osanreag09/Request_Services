@@ -36,4 +36,7 @@ public class LoanRequestsDTO {
 
     @Schema(description = "State of the loan", example = "PENDING")
     private String loanState;
+
+    @Schema(description = "Interest rate of the loan", example = "0.05")
+    private double interestRate;
 }

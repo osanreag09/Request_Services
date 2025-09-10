@@ -107,7 +107,9 @@ class RouterRestTest {
                 .jsonPath("$[0].amount").isEqualTo(testLoan.getAmount())
                 .jsonPath("$[0].term").isEqualTo(testLoan.getTerm())
                 .jsonPath("$[0].email").isEqualTo(testLoan.getEmail())
-                .jsonPath("$[0].loanType").isEqualTo(testLoan.getLoanType().getId());
+                .jsonPath("$[0].loanType").isEqualTo(testLoan.getLoanType().getName())
+                .jsonPath("$[0].loanState").isEqualTo(testLoan.getLoanState().getName())
+                .jsonPath("$[0].interestRate").isEqualTo(testLoan.getLoanType().getInterestRate());
     }
 
     private LoanRequests createTestLoanRequest() {

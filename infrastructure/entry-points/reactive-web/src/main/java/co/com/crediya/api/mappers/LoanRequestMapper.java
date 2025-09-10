@@ -17,8 +17,9 @@ public class LoanRequestMapper {
             .amount(loanRequests.getAmount())
             .term(loanRequests.getTerm())
             .email(loanRequests.getEmail())
-            .loanType(loanRequests.getLoanType().getId().toString())
-            .loanState(loanRequests.getLoanState().getId().toString())
+            .loanType(loanRequests.getLoanType().getName())
+            .loanState(loanRequests.getLoanState().getName())
+            .interestRate(loanRequests.getLoanType().getInterestRate())
             .build();
     }
 
