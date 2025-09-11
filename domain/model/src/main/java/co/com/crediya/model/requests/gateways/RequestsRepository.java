@@ -12,4 +12,6 @@ public interface RequestsRepository {
     Mono<LoanRequests> findById(Long id);
 
     Flux<LoanRequests> findByLoanStatesId(List<Long> loanStateIds, int init, int size);
+
+    Mono<LoanRequests> update(LoanRequests loanRequest);
 }

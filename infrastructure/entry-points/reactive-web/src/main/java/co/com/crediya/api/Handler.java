@@ -6,6 +6,7 @@ import co.com.crediya.api.util.JwtUtil;
 import co.com.crediya.api.util.ValidationUtil;
 import co.com.crediya.usecase.requestloan.gateways.GetLoans;
 import co.com.crediya.usecase.requestloan.gateways.RegistryRequestLoan;
+import co.com.crediya.usecase.requestloan.gateways.UpdateLoans;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class Handler {
     private final Validator validator;
     private final RegistryRequestLoan registryRequestLoan;
     private final GetLoans getLoans;
+    private final UpdateLoans updateLoans;
 
     public Mono<ServerResponse> registerRequest(ServerRequest request) {
         return JwtUtil.getTokenFromHeader(request)
@@ -48,4 +50,15 @@ public class Handler {
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(loans));
     }
+
+    public Mono<ServerResponse> updateRequest(ServerRequest request) {
+        return request.bodyToMono(LoanRequestsDTO.class)
+                        .map(LoanRequestMapper::toDomain)
+                        .flatMap(updateLoans::execute)
+                        .map(LoanRequestMapper::toDTO)
+                        .flatMap(dtoResp -> ServerResponse.ok()
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(dtoResp));
+    }
+
 }

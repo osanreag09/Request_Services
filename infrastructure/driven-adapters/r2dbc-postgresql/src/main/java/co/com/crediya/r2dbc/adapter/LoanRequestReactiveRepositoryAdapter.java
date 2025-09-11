@@ -65,4 +65,20 @@ public class LoanRequestReactiveRepositoryAdapter extends ReactiveAdapterOperati
                 .transform(LoanRequestsDataMapper::toDomainFlux);
     }
 
+    @Override
+    public Mono<LoanRequests> update(LoanRequests loanRequest) {
+        if (loanRequest.getId() == null) {
+            return Mono.error(new IllegalArgumentException("Loan request ID cannot be null for update"));
+        }
+
+        return repository.findById(loanRequest.getId())
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Loan request not found with id: " + loanRequest.getId())))
+                .flatMap(existing -> {
+                    LoanRequestsEntity updatedEntity = LoanRequestsDataMapper.toEntity(loanRequest)
+                            .withId(existing.getId());
+                    return repository.save(updatedEntity);
+                })
+                .flatMap(savedEntity -> findById(savedEntity.getId()))
+                .as(transactionalOperator::transactional);
+    }
 }
