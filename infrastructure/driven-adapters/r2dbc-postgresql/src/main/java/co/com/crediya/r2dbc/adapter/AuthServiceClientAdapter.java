@@ -19,10 +19,14 @@ public class AuthServiceClientAdapter implements AuthServiceClient {
     private static final String AUTH_SERVICE_URL = "/api/v1/usuarios/";
 
     @Override
-    public Mono<UserInfo> getUserInfo(String email) {
+    public Mono<UserInfo> getUserInfo(String email, String token) {
+        log.info("Is in auth service client adapter");
+        log.info("Email: " + email);
+        log.info("Token: " + token);
         return webClient.get()
                 .uri(AUTH_SERVICE_URL + email)
                 .accept(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .onStatus(
                         status -> status.is4xxClientError() || status.is5xxServerError(),

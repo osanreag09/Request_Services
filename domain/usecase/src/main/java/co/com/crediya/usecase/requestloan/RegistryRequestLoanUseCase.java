@@ -28,8 +28,8 @@ public class RegistryRequestLoanUseCase implements RegistryRequestLoan {
         this.authServiceClient = authServiceClient;
     }
 
-    public Mono<LoanRequests> execute(LoanRequests loanRequests) {
-        return makeValidation(loanRequests.getLoanType().getName(), loanRequests.getEmail())
+    public Mono<LoanRequests> execute(LoanRequests loanRequests, String token) {
+        return makeValidation(loanRequests.getLoanType().getName(), loanRequests.getEmail(), token)
                 .then(statesRepository.findByName("PENDING")
                         .switchIfEmpty(Mono.error(new InvalidRequestDataException("PENDING state not found")))
                         .flatMap(state ->
@@ -59,8 +59,8 @@ public class RegistryRequestLoanUseCase implements RegistryRequestLoan {
                 });
     }
 
-    private Mono<Void> validateUser(String email) {
-        return authServiceClient.getUserInfo(email)
+    private Mono<Void> validateUser(String email, String token) {
+        return authServiceClient.getUserInfo(email, token)
                 .switchIfEmpty(Mono.error(new InvalidRequestDataException("User not found")))
                 .flatMap(userInfo -> {
                     if (!userInfo.email().equals(email)) {
@@ -70,9 +70,9 @@ public class RegistryRequestLoanUseCase implements RegistryRequestLoan {
                 });
     }
 
-    private Mono<Void> makeValidation(String loanTypeName, String email) {
+    private Mono<Void> makeValidation(String loanTypeName, String email, String token) {
         return validateLoanType(loanTypeName)
-                .then(validateUser(email));
+                .then(validateUser(email, token));
     }
 
     /* //TODO: Delte this method

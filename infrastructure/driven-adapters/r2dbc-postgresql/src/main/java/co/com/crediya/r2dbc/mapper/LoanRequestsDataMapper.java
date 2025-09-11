@@ -6,13 +6,13 @@ import co.com.crediya.model.states.LoanState;
 import co.com.crediya.r2dbc.entity.LoanRequestsEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 
 @Slf4j
 public class LoanRequestsDataMapper {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static LoanRequests toDomain(LoanRequestsEntity entity) {
-        logObjects(entity);
         return LoanRequests.builder()
                 .id(entity.getId())
                 .amount(entity.getAmount())
@@ -28,7 +28,6 @@ public class LoanRequestsDataMapper {
     }
 
     public static LoanRequestsEntity toEntity(LoanRequests loanRequests) {
-        logObjects(loanRequests);
         return LoanRequestsEntity.builder()
                 .amount(loanRequests.getAmount())
                 .term(loanRequests.getTerm())
@@ -36,6 +35,10 @@ public class LoanRequestsDataMapper {
                 .loanStateId(loanRequests.getLoanState().getId())
                 .loanTypeId(loanRequests.getLoanType().getId())
                 .build();
+    }
+
+    public static Flux<LoanRequests> toDomainFlux(Flux<LoanRequestsEntity> entities) {
+        return entities.map(LoanRequestsDataMapper::toDomain);
     }
 
     private static void logObjects(Object object) {
