@@ -1,10 +1,16 @@
 package co.com.crediya.config;
 
+import co.com.crediya.model.auth.gateways.AuthServiceClient;
+import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
+import co.com.crediya.model.requests.gateways.RequestsRepository;
+import co.com.crediya.model.states.gateways.StatesRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UseCasesConfigTest {
@@ -33,6 +39,26 @@ public class UseCasesConfigTest {
         @Bean
         public MyUseCase myUseCase() {
             return new MyUseCase();
+        }
+
+        @Bean
+        public LoanTypeRepository loanTypeRepository() {
+            return Mockito.mock(LoanTypeRepository.class);
+        }
+
+        @Bean
+        public RequestsRepository requestsRepository() {
+            return Mockito.mock(RequestsRepository.class);
+        }
+
+        @Bean
+        public StatesRepository statesRepository() {
+            return Mockito.mock(StatesRepository.class);
+        }
+
+        @Bean
+        public AuthServiceClient authServiceClient() {
+            return Mockito.mock(AuthServiceClient.class);
         }
     }
 
