@@ -1,6 +1,7 @@
 package co.com.crediya.usecase.requestloan;
 
 import co.com.crediya.model.requests.LoanRequests;
+import co.com.crediya.model.requests.gateways.NotificationService;
 import co.com.crediya.model.requests.gateways.RequestsRepository;
 import co.com.crediya.model.states.LoanState;
 import co.com.crediya.model.states.gateways.StatesRepository;
@@ -21,11 +22,14 @@ public class UpdateLoansUseCase implements UpdateLoans {
 
     private final RequestsRepository requestsRepository;
     private final StatesRepository loanStateRepository;
+    private final NotificationService notificationService;
 
     public UpdateLoansUseCase(RequestsRepository requestsRepository,
-                              StatesRepository loanStateRepository) {
+                              StatesRepository loanStateRepository,
+                              NotificationService notificationService) {
         this.requestsRepository = requestsRepository;
         this.loanStateRepository = loanStateRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -42,18 +46,55 @@ public class UpdateLoansUseCase implements UpdateLoans {
                         requestsRepository.findById(loanRequests.getId())
                                 .switchIfEmpty(Mono.error(new InvalidRequestDataException(
                                         REQUEST_NOT_FOUND_MESSAGE + loanRequests.getId())))
-                                .flatMap(existingRequest -> validateAndUpdateRequest(existingRequest, newState))
+                                .flatMap(existingRequest ->
+                                        validateRequestState(existingRequest)
+                                                .then(updateRequest(existingRequest, newState))
+                                )
+                                .flatMap(this::sendNotificationIfNeeded)
                 );
     }
 
-    private Mono<LoanRequests> validateAndUpdateRequest(LoanRequests request, LoanState newState) {
+    private Mono<Void> validateRequestState(LoanRequests request) {
         Long currentStateId = request.getLoanState().getId();
 
         if (!PENDING_STATE_ID.equals(currentStateId)) {
             String errorMessage = INVALID_REQUEST_STATE_MESSAGE + currentStateId;
             return Mono.error(new InvalidRequestDataException(errorMessage));
         }
+        return Mono.empty();
+    }
 
+    private Mono<LoanRequests> updateRequest(LoanRequests request, LoanState newState) {
         return requestsRepository.update(request.withLoanState(newState));
+    }
+
+
+    private Mono<LoanRequests> sendNotificationIfNeeded(LoanRequests updatedRequest) {
+        String userEmail = updatedRequest.getEmail();
+
+        if (userEmail == null || userEmail.isBlank()) {
+            System.out.printf("WARN: Cannot send notification - email not provided for request %d%n",
+                    updatedRequest.getId());
+            return Mono.just(updatedRequest);
+        }
+
+        return notificationService.sendNotification(
+                        updatedRequest.getId(),
+                        updatedRequest.getLoanState().getId().toString(),
+                        userEmail
+                )
+                .doOnSuccess(messageId ->
+                        System.out.printf("INFO: Notification enqueued to SQS. MessageId: %s, Request: %d, State: %s%n",
+                                messageId,
+                                updatedRequest.getId(),
+                                updatedRequest.getLoanState().getId())
+                )
+                .onErrorResume(error -> {
+                    System.err.printf("ERROR: Failed to send notification for request %d: %s%n",
+                            updatedRequest.getId(),
+                            error.getMessage());
+                    return Mono.empty();
+                })
+                .thenReturn(updatedRequest);
     }
 }

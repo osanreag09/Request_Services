@@ -61,3 +61,15 @@ auth:
 
 jwt:
   secret: AeR9$kL2#pQ7*mN5&vX8!zD4%fG6@hJ3  #${JWT_SECRET} #tu_clave_secreta_muy_larga_y_segura_aqui_1234567890
+
+aws:
+  region: us-east-1
+  endpoint: http://localhost:4566
+  credentials:
+    access-key: test
+    secret-key: test
+  sqs:
+    #queue-url: "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/my-queue"
+    queue-url: "http://localhost:4566/000000000000/my-queue"
+  sns:
+    topic-arn: arn:aws:sns:us-east-1:000000000000:my-topic
