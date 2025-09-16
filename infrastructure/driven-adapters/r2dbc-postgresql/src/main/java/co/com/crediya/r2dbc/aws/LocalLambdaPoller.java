@@ -25,7 +25,6 @@ public class LocalLambdaPoller {
     private final AwsConfig awsConfig; // para leer queueUrl y topicArn
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Corre cada 5 segundos
     @Scheduled(fixedDelay = 5000, initialDelay = 5000)
     public void poll() {
         String queueUrl = awsConfig.getSqs().getQueueUrl();
@@ -50,22 +49,18 @@ public class LocalLambdaPoller {
 
             for (Message m : messages) {
                 try {
-                    // Armar un SQSEvent para reutilizar el handler Lambda
                     SQSEvent.SQSMessage sqsMsg = new SQSEvent.SQSMessage();
                     sqsMsg.setMessageId(m.messageId());
                     sqsMsg.setBody(m.body());
                     SQSEvent event = new SQSEvent();
                     event.setRecords(List.of(sqsMsg));
 
-                    // Usar el constructor inyectado para SNS cliente y topic ARN
                     String topicArn = awsConfig.getSns().getTopicArn();
                     NotificationLambdaHandler handler =
                             new NotificationLambdaHandler(snsClient, objectMapper, topicArn);
 
-                    // Invocar el handler (Context local mínimo)
                     handler.handleRequest(event, new SimpleLocalContext("LocalLambdaPoller"));
 
-                    // Eliminar el mensaje si todo salió bien
                     sqsClient.deleteMessage(DeleteMessageRequest.builder()
                             .queueUrl(queueUrl)
                             .receiptHandle(m.receiptHandle())
