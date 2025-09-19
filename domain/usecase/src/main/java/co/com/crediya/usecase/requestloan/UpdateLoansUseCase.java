@@ -65,7 +65,8 @@ public class UpdateLoansUseCase implements UpdateLoans {
     }
 
     private Mono<LoanRequests> updateRequest(LoanRequests request, LoanState newState) {
-        return requestsRepository.update(request.withLoanState(newState));
+        return requestsRepository.update(request.withLoanState(newState))
+                .map(updatedRequest -> updatedRequest.withLoanState(newState));
     }
 
 
@@ -73,14 +74,12 @@ public class UpdateLoansUseCase implements UpdateLoans {
         String userEmail = updatedRequest.getEmail();
 
         if (userEmail == null || userEmail.isBlank()) {
-            System.out.printf("WARN: Cannot send notification - email not provided for request %d%n",
-                    updatedRequest.getId());
             return Mono.just(updatedRequest);
         }
 
         return notificationService.sendNotification(
                         updatedRequest.getId(),
-                        updatedRequest.getLoanState().getId().toString(),
+                        updatedRequest.getLoanState().getName(),
                         userEmail
                 )
                 .doOnSuccess(messageId ->

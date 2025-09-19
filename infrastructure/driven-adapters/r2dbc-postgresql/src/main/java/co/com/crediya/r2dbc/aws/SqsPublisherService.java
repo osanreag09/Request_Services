@@ -19,7 +19,7 @@ public class SqsPublisherService {
 
     private final SqsClient sqsClient;
     private final AwsConfig awsConfig;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper; // inyectado por Spring
 
     public Mono<String> send(NotificationEvent event) {
         return Mono.fromCallable(() -> {
@@ -35,7 +35,7 @@ public class SqsPublisherService {
                     .build();
 
             SendMessageResponse response = sqsClient.sendMessage(request);
-            log.info("Mensaje enviado a SQS. messageId={}, queue={}", response.messageId(), queueUrl);
+            log.info("📩 Mensaje enviado a SQS. messageId={}, queue={}", response.messageId(), queueUrl);
             return response.messageId();
         });
     }
