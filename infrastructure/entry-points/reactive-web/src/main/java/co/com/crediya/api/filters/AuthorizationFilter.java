@@ -81,6 +81,8 @@ public class AuthorizationFilter implements WebFilter {
                 return "ADMIN".equals(userRole) || "ASSESSOR".equals(userRole);
             } else if ("POST".equals(method)) {
                 return "ADMIN".equals(userRole) || "ASSESSOR".equals(userRole) || "CLIENT".equals(userRole);
+            } else if ("PUT".equals(method)) {
+                return "ADMIN".equals(userRole) || "ASSESSOR".equals(userRole);
             }
         }
         return true;

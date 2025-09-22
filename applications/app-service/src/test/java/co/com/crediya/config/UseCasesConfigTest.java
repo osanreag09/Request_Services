@@ -2,6 +2,7 @@ package co.com.crediya.config;
 
 import co.com.crediya.model.auth.gateways.AuthServiceClient;
 import co.com.crediya.model.loantype.gateways.LoanTypeRepository;
+import co.com.crediya.model.requests.gateways.NotificationService;
 import co.com.crediya.model.requests.gateways.RequestsRepository;
 import co.com.crediya.model.states.gateways.StatesRepository;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,11 @@ public class UseCasesConfigTest {
         @Bean
         public AuthServiceClient authServiceClient() {
             return Mockito.mock(AuthServiceClient.class);
+        }
+
+        @Bean
+        public NotificationService notificationService() {
+            return Mockito.mock(NotificationService.class);
         }
     }
 

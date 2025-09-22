@@ -4,6 +4,7 @@ import co.com.crediya.api.config.TestSecurityConfig;
 import co.com.crediya.model.loantype.LoanType;
 import co.com.crediya.model.requests.LoanRequests;
 import co.com.crediya.model.states.LoanState;
+import co.com.crediya.usecase.requestloan.UpdateLoansUseCase;
 import co.com.crediya.usecase.requestloan.gateways.GetLoans;
 import co.com.crediya.usecase.requestloan.gateways.RegistryRequestLoan;
 import jakarta.validation.Validator;
@@ -22,6 +23,8 @@ import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {RouterRest.class, Handler.class})
@@ -40,6 +43,9 @@ class RouterRestTest {
 
     @MockitoBean
     private GetLoans getLoans;
+
+    @MockitoBean
+    private UpdateLoansUseCase updateLoansUseCase;
 
     private static final String TEST_TOKEN = "test-token";
     private static final String TEST_EMAIL = "test@example.com";
@@ -80,6 +86,77 @@ class RouterRestTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.APPLICATION_JSON);
+    }
+
+    @Test
+    @WithMockUser
+    void testUpdateRequest_ShouldReturnUpdatedLoan() {
+        // Given
+        LoanRequests testLoan = createTestLoanRequest();
+        LoanRequests updatedLoan = testLoan.toBuilder()
+                .loanState(LoanState.builder().id(2L).name("APPROVED").build())
+                .build();
+
+        when(updateLoansUseCase.execute(any(LoanRequests.class)))
+                .thenReturn(Mono.just(updatedLoan));
+
+        // When & Then
+        webTestClient.put()
+                .uri("/api/v1/solicitud")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                    {
+                        "id": 1,
+                        "amount": 1000.0,
+                        "term": 12,
+                        "email": "test@example.com",
+                        "loanType": "HOME",
+                        "loanState": "APPROVED"
+                    }
+                    """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(updatedLoan.getId().intValue())
+                .jsonPath("$.amount").isEqualTo(updatedLoan.getAmount())
+                .jsonPath("$.term").isEqualTo(updatedLoan.getTerm())
+                .jsonPath("$.email").isEqualTo(updatedLoan.getEmail())
+                .jsonPath("$.loanType").isEqualTo(updatedLoan.getLoanType().getName())
+                .jsonPath("$.loanState").isEqualTo("APPROVED");
+
+        // Verify that the updateLoansUseCase.execute was called with the correct parameters
+        verify(updateLoansUseCase).execute(argThat(loan -> 
+            loan.getId().equals(1L) && 
+            loan.getLoanState().getName().equals("APPROVED")
+        ));
+    }
+
+    @Test
+    @WithMockUser
+    void testUpdateRequest_WhenLoanNotFound_ShouldReturnNotFound() {
+        // Given
+        when(updateLoansUseCase.execute(any(LoanRequests.class)))
+                .thenReturn(Mono.error(new RuntimeException("Loan not found")));
+
+        // When & Then
+        webTestClient.put()
+                .uri("/api/v1/solicitud")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                    {
+                        "id": 999,
+                        "amount": 1000.0,
+                        "term": 12,
+                        "email": "test@example.com",
+                        "loanType": "HOME",
+                        "loanState": "APPROVED"
+                    }
+                    """)
+                .exchange()
+                .expectStatus().is5xxServerError();
     }
 
     @Test
