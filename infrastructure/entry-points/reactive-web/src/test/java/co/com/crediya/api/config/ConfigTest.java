@@ -4,6 +4,7 @@ import co.com.crediya.api.Handler;
 import co.com.crediya.api.RouterRest;
 import co.com.crediya.usecase.requestloan.gateways.GetLoans;
 import co.com.crediya.usecase.requestloan.gateways.RegistryRequestLoan;
+import co.com.crediya.usecase.requestloan.gateways.UpdateLoans;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ class ConfigTest {
 
     @MockitoBean
     private GetLoans getLoans;
+
+    @MockitoBean
+    private UpdateLoans updateLoans;
 
     @MockitoBean
     private WebClient webClient;

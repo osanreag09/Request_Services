@@ -82,18 +82,6 @@ public class UpdateLoansUseCase implements UpdateLoans {
                         updatedRequest.getLoanState().getName(),
                         userEmail
                 )
-                .doOnSuccess(messageId ->
-                        System.out.printf("INFO: Notification enqueued to SQS. MessageId: %s, Request: %d, State: %s%n",
-                                messageId,
-                                updatedRequest.getId(),
-                                updatedRequest.getLoanState().getId())
-                )
-                .onErrorResume(error -> {
-                    System.err.printf("ERROR: Failed to send notification for request %d: %s%n",
-                            updatedRequest.getId(),
-                            error.getMessage());
-                    return Mono.empty();
-                })
                 .thenReturn(updatedRequest);
     }
 }
